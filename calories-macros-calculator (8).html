@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>حاسبة السعرات والماكروز — Build with Protein</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0D;
+    --card:#18181B;
+    --card-border:rgba(255,255,255,.09);
+    --ink:#F3EFE7;
+    --ink-soft:rgba(243,239,231,.82);
+    --muted:rgba(243,239,231,.62);
+    --cream:#FAEEDA;
+    --amber:#F2A83B;
+    --amber-dark:#D6841A;
+    --teal:#5DCAA5;
+    --coral:#F0748A;
+    --protein:var(--coral);
+    --protein-soft:rgba(240,116,138,.14);
+    --carbs:var(--teal);
+    --carbs-soft:rgba(93,202,165,.14);
+    --fat:var(--amber);
+    --fat-soft:rgba(242,168,59,.14);
+    --shadow: 0 24px 50px -20px rgba(0,0,0,.6);
+    --radius: 20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0; overflow-x:hidden; width:100%;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Almarai',sans-serif;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:clamp(14px, 4vw, 28px) clamp(10px, 4vw, 16px);
+    padding-top:calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-top, 0px));
+    padding-bottom:calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-bottom, 0px));
+    padding-left:calc(clamp(10px, 4vw, 16px) + env(safe-area-inset-left, 0px));
+    padding-right:calc(clamp(10px, 4vw, 16px) + env(safe-area-inset-right, 0px));
+    line-height:1.75;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app{ width:100%; max-width:560px; }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:clamp(12px, 4vw, 18px); padding:0 4px; }
+  .brand-mark{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(12.5px, 3.4vw, 15px); letter-spacing:.3px; color:var(--cream); }
+  .brand-mark span{color:var(--amber);}
+  .progress-wrap{ height:4px; width:100%; background:var(--card-border); border-radius:4px; overflow:hidden; margin-bottom:28px; }
+  .progress-bar{ height:100%; width:0%; background:var(--amber); border-radius:4px; transition:width .45s ease; }
+  .card{
+    background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:clamp(22px, 6vw, 38px) clamp(18px, 5.5vw, 32px);
+    min-height:min(360px, 60vh); width:100%; position:relative; overflow:hidden;
+    display:flex; flex-direction:column; animation:enter .4s ease;
+  }
+  .card::before{
+    content:""; position:absolute; inset:0; z-index:0; opacity:.5; pointer-events:none;
+    background-image: radial-gradient(circle, rgba(255,255,255,.05) 1.6px, transparent 1.6px);
+    background-size:22px 22px;
+  }
+  .card > *{ position:relative; z-index:1; }
+  @keyframes enter{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  .step-tag{ font-family:'Tajawal',sans-serif; font-size:12px; color:var(--amber); font-weight:700; margin-bottom:10px; }
+  h1.q{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(19px, 5.5vw, 25px); line-height:1.4; margin:0 0 8px; color:var(--cream); }
+  p.hint{ color:var(--muted); font-size:clamp(12.5px, 3.4vw, 14px); margin:0 0 clamp(16px, 5vw, 24px); }
+  .spacer{flex:1;}
+  .nav-row{ display:flex; gap:10px; margin-top:clamp(16px, 5vw, 24px); flex-wrap:wrap; }
+  .nav-row button{ min-width:110px; }
+  button{ font-family:'Tajawal',sans-serif; cursor:pointer; border:none; outline:none; }
+  .btn-primary{
+    flex:1; background:var(--amber); color:#1B1204; font-weight:700; font-size:clamp(13.5px, 3.6vw, 15px);
+    padding:clamp(13px, 3.6vw, 15px) clamp(14px, 4vw, 20px); border-radius:999px;
+    box-shadow:0 14px 32px -10px rgba(242,168,59,.45);
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 18px 38px -8px rgba(242,168,59,.55); }
+  .btn-primary:active{transform:scale(.98);}
+  .btn-primary:disabled{background:rgba(255,255,255,.12); color:rgba(243,239,231,.4); box-shadow:none; cursor:not-allowed;}
+  .btn-ghost{
+    background:transparent; color:var(--cream); font-weight:600; font-size:clamp(13.5px, 3.6vw, 15px);
+    padding:clamp(13px, 3.6vw, 15px) clamp(12px, 3.6vw, 18px); border-radius:999px; border:1.5px solid rgba(250,238,218,.25);
+  }
+  .btn-ghost:hover{background:rgba(250,238,218,.06);}
+  .num-display{
+    font-family:'El Messiri',serif; font-weight:700; font-size:clamp(34px, 11vw, 52px); color:var(--amber);
+    margin:16px 0 6px; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+  }
+  .num-display small{ font-family:'Tajawal',sans-serif; font-weight:500; font-size:clamp(13px, 3.6vw, 16px); color:var(--muted); }
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:6px; border-radius:6px;
+    background:rgba(255,255,255,.12); margin:16px 0 6px; direction:ltr;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:24px;height:24px;border-radius:50%;
+    background:var(--amber); border:4px solid var(--card); box-shadow:0 0 0 1px rgba(255,255,255,.12); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%; background:var(--amber);
+    border:4px solid var(--card); box-shadow:0 0 0 1px rgba(255,255,255,.12); cursor:pointer;
+  }
+  .range-labels{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+  .choices{ display:flex; flex-direction:column; gap:10px; overflow-y:auto; max-height:min(52vh, 480px); margin:0 -2px; padding:2px; }
+  .choice{
+    text-align:right; background:var(--bg); border:1.5px solid rgba(255,255,255,.12); border-radius:14px;
+    padding:13px 16px; padding-left:34px; display:flex; flex-direction:column; gap:4px;
+    transition:border-color .15s ease, background .15s ease; position:relative; width:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .choice:hover{border-color:rgba(242,168,59,.5);}
+  .choice.selected{ border-color:var(--amber); background:rgba(242,168,59,.08); }
+  .choice.selected::after{ content:"✓"; position:absolute; left:16px; top:13px; font-weight:700; color:var(--amber); }
+  .choice .c-title{ font-weight:700; font-size:clamp(13.5px, 3.6vw, 15px); color:var(--cream); }
+  .choice .c-desc{ font-size:clamp(11.5px, 3.1vw, 12.5px); color:var(--muted); line-height:1.5; }
+  .badge{
+    display:inline-block; font-family:'Tajawal',sans-serif; font-size:10.5px; font-weight:700; color:#1B1204;
+    background:var(--amber); padding:3px 9px; border-radius:999px; width:fit-content; margin-top:4px;
+  }
+  .choices-2col{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(8px, 3vw, 12px); }
+  .choices-2col .choice{align-items:center; text-align:center; padding-left:16px;}
+  .choices-2col .choice.selected::after{left:auto; right:12px; top:12px;}
+  .intro-title{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(22px, 7vw, 30px); line-height:1.35; margin:0 0 14px; color:var(--cream); }
+  .intro-title .accent{color:var(--amber);}
+  .intro-desc{ color:var(--muted); font-size:clamp(13.5px, 3.8vw, 15px); margin-bottom:clamp(18px, 5vw, 24px); }
+  .intro-list{ list-style:none; padding:0; margin:0 0 clamp(20px, 6vw, 28px); display:flex; flex-direction:column; gap:10px; }
+  .intro-list li{ display:flex; align-items:center; gap:10px; font-size:clamp(12.5px, 3.5vw, 14px); color:var(--ink-soft); }
+  .dot{ width:8px;height:8px;border-radius:50%;flex:none; }
+  .result-card{padding:clamp(22px, 6vw, 32px) clamp(16px, 5vw, 28px) clamp(20px, 5vw, 28px);}
+  .result-title{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(17px, 4.6vw, 20px); margin:0 0 4px; color:var(--cream); }
+  .result-sub{ color:var(--muted); font-size:clamp(11.5px, 3.2vw, 13px); margin:0 0 clamp(14px, 4vw, 20px); }
+  .donut-wrap{ display:flex; justify-content:center; margin:6px 0 clamp(14px, 4vw, 20px); position:relative; }
+  .donut-wrap svg{ width:min(180px, 46vw); height:min(180px, 46vw); }
+  .donut-center{ position:absolute; top:50%;left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .donut-center .kcal{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(22px, 6.5vw, 32px); color:var(--amber); }
+  .donut-center .kcal-label{ font-family:'Tajawal',sans-serif; font-size:clamp(9.5px, 2.6vw, 11px); color:var(--muted); letter-spacing:.5px; }
+  .macro-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:clamp(6px, 2.4vw, 10px); margin-bottom:clamp(14px, 4vw, 20px); }
+  .macro-card{ border-radius:14px; padding:clamp(9px, 3vw, 14px) clamp(5px, 2.4vw, 10px); text-align:center; border:1.5px solid rgba(255,255,255,.12); min-width:0; }
+  .macro-card .m-label{ font-family:'Tajawal',sans-serif; font-size:clamp(10px, 2.8vw, 12px); font-weight:700; display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .macro-card .m-val{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(17px, 4.8vw, 21px); color:var(--cream); }
+  .macro-card .m-unit{font-size:clamp(9.5px, 2.6vw, 11px); color:var(--muted); font-weight:500;}
+  .macro-card .m-per{ font-size:clamp(9px, 2.4vw, 10.5px); color:var(--muted); margin-top:6px; }
+  .stat-rows{ border-top:1px dashed rgba(255,255,255,.15); padding-top:14px; display:flex; flex-direction:column; gap:9px; margin-bottom:18px; }
+  .stat-row{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 10px; font-size:clamp(12px, 3.2vw, 13px); color:var(--muted); }
+  .stat-row span{flex:1 1 auto; min-width:120px;}
+  .stat-row b{color:var(--cream); font-family:'El Messiri',serif; font-weight:700; text-align:left; max-width:65%;}
+  .disclaimer{
+    font-size:clamp(10.5px, 2.9vw, 11.5px); color:var(--muted); background:rgba(255,255,255,.04); border:1px solid var(--card-border);
+    border-radius:10px; padding:12px 14px; margin-bottom:16px; line-height:1.7;
+  }
+  .macro-slider-row{ margin-bottom:18px; }
+  .macro-slider-row .row-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; }
+  .macro-slider-row label{ font-family:'Tajawal',sans-serif; font-weight:700; font-size:clamp(13px, 3.5vw, 14px); color:var(--ink-soft); }
+  .macro-slider-row .val{ font-family:'El Messiri',serif; font-weight:700; font-size:clamp(14px, 3.8vw, 16px); color:var(--cream); }
+  .fat-summary{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:var(--fat-soft); border:1px solid var(--fat); border-radius:12px;
+    padding:12px clamp(12px, 4vw, 16px); margin-top:6px; font-family:'Tajawal',sans-serif; font-size:clamp(13px, 3.5vw, 14px); font-weight:700; color:var(--cream);
+  }
+  .link-btn{ background:none; color:var(--teal); text-decoration:underline; font-family:'Tajawal',sans-serif; font-size:clamp(11.5px, 3.1vw, 12.5px); padding:8px 0; align-self:flex-start; }
+
+  .share-block{ border-top:1px dashed rgba(255,255,255,.15); padding-top:16px; margin-bottom:4px; }
+  .share-label{ font-family:'Tajawal',sans-serif; font-size:clamp(11.5px, 3.1vw, 12.5px); color:var(--muted); margin-bottom:10px; text-align:center; }
+  .share-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .share-row a, .share-row button{
+    flex:1; min-width:130px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    font-family:'Tajawal',sans-serif; font-weight:700; font-size:clamp(12.5px, 3.4vw, 14px);
+    padding:12px 14px; border-radius:999px; text-decoration:none; transition:transform .15s ease;
+  }
+  .share-row a:active, .share-row button:active{ transform:scale(.98); }
+  .submit-btn{ background:var(--amber); color:#1B1204; font-family:'Tajawal',sans-serif; box-shadow:0 14px 32px -10px rgba(242,168,59,.45); }
+  .submit-btn:disabled{ opacity:.7; cursor:not-allowed; }
+  .share-status{ font-family:'Tajawal',sans-serif; font-size:clamp(11px, 3vw, 12px); color:var(--muted); margin-top:10px; text-align:center; line-height:1.6; }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .field label{ font-family:'Tajawal',sans-serif; font-weight:700; font-size:clamp(12.5px, 3.4vw, 14px); color:var(--cream); }
+  .field input{
+    font-family:'Almarai',sans-serif; font-size:clamp(13.5px, 3.6vw, 15px); color:var(--ink);
+    padding:13px 16px; border-radius:12px; border:1.5px solid rgba(255,255,255,.12);
+    background:var(--bg); outline:none; transition:border-color .15s ease; width:100%;
+  }
+  .field input::placeholder{ color:rgba(243,239,231,.35); }
+  .field input:focus{ border-color:var(--teal); }
+  .field-note{ font-family:'Tajawal',sans-serif; font-size:clamp(11px, 3vw, 12px); color:var(--muted); margin-top:-8px; margin-bottom:18px; }
+
+  @media (max-width:340px){
+    .nav-row{ flex-direction:column; }
+    .nav-row button{ width:100%; }
+    .choices-2col{ grid-template-columns:1fr; }
+  }
+  @media (max-height:640px){
+    .card{ min-height:0; }
+    .progress-wrap{ margin-bottom:16px; }
+    .intro-list{ margin-bottom:14px; }
+  }
+  @media (hover:none){
+    .choice:active{ border-color:rgba(242,168,59,.5); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="brand">
+    <div class="brand-mark">حاسبة الماكروز <span>•</span> Build with Protein</div>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div id="stage"></div>
+</div>
+
+<script>
+// حطي هنا رابط Google Apps Script Web App اللي هيجمع كل النتايج في شيت جوجل خاص بيكِ.
+// شوفي التعليمات اللي بعتهالك عشان تعملي الشيت وتاخدي الرابط ده (خطوة واحدة بسيطة).
+const SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby_e8svNUlEU-ZL8BoVPFzRUWYeivJpGwx7LvyOSGw1cQ3uAKbdqPoGyp2drL7a2PbQyQ/exec";
+let lastShareText = "";
+let lastPayload = null;
+
+const ACTIVITY = [
+  { id:'idle',     label:'خامل (قليل أو بدون رياضة)',            desc:'ما فيه تمرين منتظم بالأسبوع',                                              mult:1.2   },
+  { id:'light',    label:'نشاط خفيف (1-3 أيام أسبوعياً)',         desc:'تمرين عادي 15-30 دقيقة، 1-3 أيام',                                        mult:1.375 },
+  { id:'moderate', label:'نشاط متوسط (4-5 أيام أسبوعياً)',        desc:'تمرين عادي 15-30 دقيقة، 4-5 أيام',                                        mult:1.465 },
+  { id:'high',     label:'نشاط عالي (يومي أو مكثف 3-4 أيام)',     desc:'تمرين يومي (أي مدة)، أو تمرين مكثف 45-120 دقيقة لمدة 3-4 أيام',           mult:1.55  },
+  { id:'veryHigh', label:'نشاط عالي جداً (مكثف 6-7 أيام)',        desc:'تمرين مكثف 45-120 دقيقة، 6-7 أيام بالأسبوع',                               mult:1.725 },
+  { id:'extreme',  label:'نشاط شديد جداً (يومي مكثف أو شغل بدني)', desc:'تمرين شديد جداً (2+ ساعة) يومياً، أو شغل بدني مكثف',                       mult:1.9   },
+];
+
+const GOAL_MAIN = [
+  { id:'maintain',        label:'المحافظة على الوزن',                                                             desc:'تثبيت وزنك الحالي.', badge:null },
+  { id:'recomp_deficit',  label:'اعادة تشكيل (خسارة دهون وبناء العضل)(ارغب في خسارة الدهون اكتر من بناءا العضلات)', desc:'توزيع ماكروز ثابت لهذا الاختيار: كارب 40% / بروتين 30% / دهون 30%', badge:'الأكثر توصية للمبتدئين' },
+  { id:'recomp_surplus',  label:'فائض خفيف جدا (ارغب في بناء عضلات اكثر من خسارة دهون)',                           desc:'توزيع ماكروز ثابت لهذا الاختيار: كارب 25% / بروتين 25% / دهون 50%', badge:'الأكثر توصية للمبتدئين' },
+  { id:'lose',            label:'نزول وزن',                                                                        desc:'عجز سعرات لخسارة وزن — هنسألك بعدها عن السرعة.', badge:null },
+  { id:'gain',            label:'زيادة وزن',                                                                       desc:'فائض سعرات لزيادة الوزن — هنسألك بعدها عن السرعة.', badge:null },
+];
+
+const LOSE_RATES = [
+  { id:'lose_light',  label:'نزول خفيف 0.25 كغم بالأسبوع', adj:-250 },
+  { id:'lose_medium', label:'نزول 0.5 كغم بالأسبوع',        adj:-500 },
+  { id:'lose_strong', label:'نزول قوي 1 كغم بالأسبوع',      adj:-1000 },
+];
+const GAIN_RATES = [
+  { id:'gain_light',  label:'زيادة خفيفة 0.25 كغم بالأسبوع', adj:250 },
+  { id:'gain_medium', label:'زيادة 0.5 كغم بالأسبوع',        adj:500 },
+  { id:'gain_strong', label:'زيادة قوية 1 كغم بالأسبوع',     adj:1000 },
+];
+
+const GOAL_ADJ = {
+  maintain: { label:'المحافظة على الوزن', adj:0 },
+  recomp_deficit: { label:'اعادة تشكيل (عجز خفيف لخسارة الدهون)', adj:-150 },
+  recomp_surplus: { label:'اعادة تشكيل (فائض خفيف لبناء العضل)', adj:150 },
+  lose_light: LOSE_RATES[0], lose_medium: LOSE_RATES[1], lose_strong: LOSE_RATES[2],
+  gain_light: GAIN_RATES[0], gain_medium: GAIN_RATES[1], gain_strong: GAIN_RATES[2],
+};
+
+let answers = {
+  name:'', phone:'',
+  age:25, gender:null, height:170, weight:65,
+  activity:null, goalCategory:null, goalFinal:null,
+  carbPct:40, proteinPct:30
+};
+
+let history = [];
+let current = 'intro';
+
+const ORDER_HINT = { intro:0, contact:0, age:1, gender:2, height:3, weight:4, activity:5, goal:6, goal_rate:7, macros:8, result:9 };
+
+function updateProgress(){
+  const idx = ORDER_HINT[current] ?? 0;
+  const pct = Math.round((idx/9)*100);
+  document.getElementById('progressBar').style.width = pct + "%";
+}
+
+function submitResult(){
+  const btn = document.getElementById('submitBtn');
+  const status = document.getElementById('submitStatus');
+
+  if(!SHEET_WEBAPP_URL){
+    status.textContent = "لسه مفيش رابط شيت متظبط. كلمي مين ما ظبطلك الحاسبة يضيف رابط Google Sheet.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "جارِ الإرسال...";
+  status.textContent = "";
+
+  fetch(SHEET_WEBAPP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type':'text/plain;charset=utf-8' }, // بيتفادى مشاكل CORS مع Google Apps Script
+    body: JSON.stringify(lastPayload)
+  })
+  .then(()=>{
+    btn.textContent = "تم الإرسال ✅";
+    status.textContent = "وصلت نتيجتك للمدربة، هتتواصل معاكِ قريب.";
+  })
+  .catch(()=>{
+    btn.disabled = false;
+    btn.textContent = "📤 إرسال النتيجة";
+    status.textContent = "تعذّر إرسال النتيجة، جربي تاني أو تأكدي من الاتصال بالإنترنت.";
+  });
+}
+
+function goNext(){
+  const map = {
+    intro:'contact', contact:'age', age:'gender', gender:'height', height:'weight', weight:'activity', activity:'goal',
+    goal: ()=> {
+      if(answers.goalCategory === 'recomp_deficit'){ answers.carbPct=40; answers.proteinPct=30; return 'result'; }
+      if(answers.goalCategory === 'recomp_surplus'){ answers.carbPct=25; answers.proteinPct=25; return 'result'; }
+      if(answers.goalCategory==='lose' || answers.goalCategory==='gain') return 'goal_rate';
+      return 'macros';
+    },
+    goal_rate:'macros',
+    macros:'result'
+  };
+  let next = map[current];
+  if(typeof next === 'function') next = next();
+  history.push(current);
+  current = next;
+  render();
+}
+function goBack(){
+  if(history.length){ current = history.pop(); render(); }
+}
+function restart(){
+  history = []; current='intro';
+  answers = { name:'', phone:'', age:25, gender:null, height:170, weight:65, activity:null, goalCategory:null, goalFinal:null, carbPct:40, proteinPct:30 };
+  render();
+}
+
+function sliderQuestion(cfg){
+  const {tag,title,hint,min,max,unit,value} = cfg;
+  return `
+    <div class="card">
+      <div class="step-tag">${tag}</div>
+      <h1 class="q">${title}</h1>
+      <p class="hint">${hint}</p>
+      <div class="num-display" id="numDisplay">${value} <small>${unit}</small></div>
+      <input type="range" min="${min}" max="${max}" value="${value}" id="rangeInput">
+      <div class="range-labels"><span>${max}</span><span>${min}</span></div>
+      <div class="spacer"></div>
+      <div class="nav-row">
+        <button class="btn-ghost" onclick="goBack()">السابق</button>
+        <button class="btn-primary" id="nextBtn">التالي</button>
+      </div>
+    </div>
+  `;
+}
+
+function choiceCard(id, title, desc, selected, badge){
+  return `
+    <button class="choice${selected?' selected':''}" data-id="${id}" onclick="selectChoice('${id}')">
+      <span class="c-title">${title}</span>
+      ${desc ? `<span class="c-desc">${desc}</span>` : ""}
+      ${badge ? `<span class="badge">${badge}</span>` : ""}
+    </button>
+  `;
+}
+
+let currentSelectHandler = null;
+function selectChoice(id){ currentSelectHandler(id); render(); }
+
+function render(){
+  updateProgress();
+  const stage = document.getElementById('stage');
+
+  if(current === 'intro'){
+    stage.innerHTML = `
+      <div class="card">
+        <div class="intro-title">احسبي احتياجك اليومي من <span class="accent">السعرات والبروتين</span></div>
+        <p class="intro-desc">مو معقدة أبدًا، كم سؤال، وفي الآخر بعطيكي خطة سعرات وماكروز مبنية على جسمك، نشاطك، وهدفك بالضبط.</p>
+        <ul class="intro-list">
+          <li><span class="dot" style="background:var(--protein)"></span> بروتين كافي للحفاظ على العضلات</li>
+          <li><span class="dot" style="background:var(--carbs)"></span> كارب لطاقة تمرينك</li>
+          <li><span class="dot" style="background:var(--fat)"></span> دهون لتوازن الهرمونات</li>
+        </ul>
+        <div class="spacer"></div>
+        <div class="nav-row"><button class="btn-primary" onclick="goNext()">ابدأي الحساب</button></div>
+      </div>
+    `;
+    return;
+  }
+
+  if(current === 'contact'){
+    stage.innerHTML = `
+      <div class="card">
+        <div class="step-tag">بياناتك</div>
+        <h1 class="q">قبل ما نبدأ، عرّفينا عليك</h1>
+        <p class="hint">هالبيانات هتتبعت مع نتيجتك عشان نقدر نتابع معاك.</p>
+        <div class="field">
+          <label>الاسم</label>
+          <input type="text" id="nameInput" placeholder="اسمك الكامل" value="${answers.name}">
+        </div>
+        <div class="field">
+          <label>رقم الواتساب</label>
+          <input type="tel" id="phoneInput" placeholder="مثال: 05xxxxxxxx" value="${answers.phone}">
+        </div>
+        <p class="field-note">الحقلين إجباريين عشان نقدر نوصلك.</p>
+        <div class="spacer"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goBack()">السابق</button>
+          <button class="btn-primary" id="nextBtn" ${!(answers.name.trim() && answers.phone.trim())?'disabled':''}>التالي</button>
+        </div>
+      </div>
+    `;
+    const nameInput = document.getElementById('nameInput');
+    const phoneInput = document.getElementById('phoneInput');
+    const nextBtn = document.getElementById('nextBtn');
+    function refreshBtn(){
+      nextBtn.disabled = !(nameInput.value.trim() && phoneInput.value.trim());
+    }
+    nameInput.addEventListener('input', e=>{ answers.name = e.target.value; refreshBtn(); });
+    phoneInput.addEventListener('input', e=>{ answers.phone = e.target.value; refreshBtn(); });
+    nextBtn.addEventListener('click', goNext);
+    return;
+  }
+
+  if(current === 'age'){
+    stage.innerHTML = sliderQuestion({ tag:"١ / ٧", title:"كام عمرك؟", hint:"اكتبي عمرك بالسنين (بين 18 و80).", min:18, max:80, unit:"سنة", value: answers.age });
+    document.getElementById('rangeInput').addEventListener('input', e=>{
+      answers.age = parseInt(e.target.value);
+      document.getElementById('numDisplay').innerHTML = answers.age + " <small>سنة</small>";
+    });
+    document.getElementById('nextBtn').addEventListener('click', goNext);
+    return;
+  }
+
+  if(current === 'gender'){
+    currentSelectHandler = (id)=>{ answers.gender = id; };
+    stage.innerHTML = `
+      <div class="card">
+        <div class="step-tag">٢ / ٧</div>
+        <h1 class="q">إيه جنسك؟</h1>
+        <p class="hint">بيستخدم في معادلة حساب معدل الأيض الأساسي (BMR).</p>
+        <div class="choices-2col">
+          ${choiceCard('أنثى','أنثى', null, answers.gender==='أنثى')}
+          ${choiceCard('ذكر','ذكر', null, answers.gender==='ذكر')}
+        </div>
+        <div class="spacer"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goBack()">السابق</button>
+          <button class="btn-primary" ${!answers.gender?'disabled':''} onclick="goNext()">التالي</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if(current === 'height'){
+    stage.innerHTML = sliderQuestion({ tag:"٣ / ٧", title:"طولك كام سنتيمتر؟", hint:"الطول بالسنتيمتر.", min:140, max:210, unit:"سم", value: answers.height });
+    document.getElementById('rangeInput').addEventListener('input', e=>{
+      answers.height = parseInt(e.target.value);
+      document.getElementById('numDisplay').innerHTML = answers.height + " <small>سم</small>";
+    });
+    document.getElementById('nextBtn').addEventListener('click', goNext);
+    return;
+  }
+
+  if(current === 'weight'){
+    stage.innerHTML = sliderQuestion({ tag:"٤ / ٧", title:"وزنك كام كيلو؟", hint:"الوزن الحالي بالكيلوجرام.", min:40, max:150, unit:"كغم", value: answers.weight });
+    document.getElementById('rangeInput').addEventListener('input', e=>{
+      answers.weight = parseInt(e.target.value);
+      document.getElementById('numDisplay').innerHTML = answers.weight + " <small>كغم</small>";
+    });
+    document.getElementById('nextBtn').addEventListener('click', goNext);
+    return;
+  }
+
+  if(current === 'activity'){
+    currentSelectHandler = (id)=>{ answers.activity = id; };
+    stage.innerHTML = `
+      <div class="card">
+        <div class="step-tag">٥ / ٧</div>
+        <h1 class="q">إيه مستوى نشاطك؟</h1>
+        <p class="hint">اختاري الوصف الأقرب لروتينك الأسبوعي.</p>
+        <div class="choices">
+          ${ACTIVITY.map(a=>choiceCard(a.id, a.label, a.desc, answers.activity===a.id)).join('')}
+        </div>
+        <div class="spacer"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goBack()">السابق</button>
+          <button class="btn-primary" ${!answers.activity?'disabled':''} onclick="goNext()">التالي</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if(current === 'goal'){
+    currentSelectHandler = (id)=>{
+      answers.goalCategory = id;
+      if(id!=='lose' && id!=='gain'){ answers.goalFinal = id; }
+      else { answers.goalFinal = null; }
+    };
+    stage.innerHTML = `
+      <div class="card">
+        <div class="step-tag">٦ / ٧</div>
+        <h1 class="q">إيه هدفك؟</h1>
+        <p class="hint">اختاري الهدف الأقرب لرغبتك دلوقتي.</p>
+        <div class="choices">
+          ${GOAL_MAIN.map(g=>choiceCard(g.id, g.label, g.desc, answers.goalCategory===g.id, g.badge)).join('')}
+        </div>
+        <div class="spacer"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goBack()">السابق</button>
+          <button class="btn-primary" ${!answers.goalCategory?'disabled':''} onclick="goNext()">التالي</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if(current === 'goal_rate'){
+    const rates = answers.goalCategory === 'lose' ? LOSE_RATES : GAIN_RATES;
+    currentSelectHandler = (id)=>{ answers.goalFinal = id; };
+    stage.innerHTML = `
+      <div class="card">
+        <div class="step-tag">٦ / ٧ — إيه سرعة ${answers.goalCategory==='lose'?'النزول':'الزيادة'}؟</div>
+        <h1 class="q">حددي السرعة المناسبة</h1>
+        <p class="hint">كل سرعة معاها تعديل مختلف على سعراتك اليومية.</p>
+        <div class="choices">
+          ${rates.map(r=>choiceCard(r.id, r.label, (r.adj>0?'+':'') + r.adj + ' سعرة/يوم', answers.goalFinal===r.id)).join('')}
+        </div>
+        <div class="spacer"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goBack()">السابق</button>
+          <button class="btn-primary" ${!answers.goalFinal?'disabled':''} onclick="goNext()">التالي</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if(current === 'macros'){
+    renderMacrosStep(stage);
+    return;
+  }
+
+  if(current === 'result'){
+    renderResult(stage);
+    return;
+  }
+}
+
+function renderMacrosStep(stage){
+  const fatPct = 100 - answers.carbPct - answers.proteinPct;
+  stage.innerHTML = `
+    <div class="card">
+      <div class="step-tag">٧ / ٧</div>
+      <h1 class="q">توزيع الماكروز</h1>
+      <p class="hint">الافتراضي مناسب لمعظم الحالات، بس تقدري تعدليه. الدهون بتتحسب تلقائياً من الباقي.</p>
+
+      <div class="macro-slider-row">
+        <div class="row-top">
+          <label style="color:var(--carbs)">كارب</label>
+          <span class="val" id="carbVal">${answers.carbPct}%</span>
+        </div>
+        <input type="range" min="10" max="65" value="${answers.carbPct}" id="carbSlider">
+      </div>
+
+      <div class="macro-slider-row">
+        <div class="row-top">
+          <label style="color:var(--protein)">بروتين</label>
+          <span class="val" id="proteinVal">${answers.proteinPct}%</span>
+        </div>
+        <input type="range" min="15" max="50" value="${answers.proteinPct}" id="proteinSlider">
+      </div>
+
+      <div class="fat-summary">
+        <span style="color:var(--fat)">دهون (تلقائي)</span>
+        <span id="fatVal">${fatPct}%</span>
+      </div>
+
+      <button class="link-btn" onclick="resetMacros()">إعادة للتوزيع الافتراضي (40 / 30 / 30)</button>
+
+      <div class="spacer"></div>
+      <div class="nav-row">
+        <button class="btn-ghost" onclick="goBack()">السابق</button>
+        <button class="btn-primary" onclick="goNext()">احسبي نتيجتي</button>
+      </div>
+    </div>
+  `;
+
+  const carbSlider = document.getElementById('carbSlider');
+  const proteinSlider = document.getElementById('proteinSlider');
+
+  function clampAndUpdate(changed){
+    let carb = parseInt(carbSlider.value);
+    let protein = parseInt(proteinSlider.value);
+    if(carb + protein > 95){
+      if(changed === 'carb'){ carb = 95 - protein; carbSlider.value = carb; }
+      else { protein = 95 - carb; proteinSlider.value = protein; }
+    }
+    answers.carbPct = carb;
+    answers.proteinPct = protein;
+    document.getElementById('carbVal').textContent = carb + '%';
+    document.getElementById('proteinVal').textContent = protein + '%';
+    document.getElementById('fatVal').textContent = (100 - carb - protein) + '%';
+  }
+
+  carbSlider.addEventListener('input', ()=>clampAndUpdate('carb'));
+  proteinSlider.addEventListener('input', ()=>clampAndUpdate('protein'));
+}
+
+function resetMacros(){
+  answers.carbPct = 40; answers.proteinPct = 30;
+  render();
+}
+
+function renderResult(stage){
+  const { age, gender, height, weight, activity, goalFinal, carbPct, proteinPct } = answers;
+
+  let bmr = gender === 'ذكر'
+    ? 10*weight + 6.25*height - 5*age + 5
+    : 10*weight + 6.25*height - 5*age - 161;
+  bmr = Math.round(bmr);
+
+  const activityInfo = ACTIVITY.find(a=>a.id===activity);
+  const tdee = Math.round(bmr * activityInfo.mult);
+
+  const goalInfo = GOAL_ADJ[goalFinal];
+  const targetCalories = Math.round(tdee + goalInfo.adj);
+
+  const fatPct = 100 - carbPct - proteinPct;
+
+  const proteinG = Math.round(targetCalories * proteinPct/100/4);
+  const carbG = Math.round(targetCalories * carbPct/100/4);
+  const fatG = Math.round(targetCalories * fatPct/100/9);
+
+  const proteinKcal = proteinG*4, carbKcal = carbG*4, fatKcal = fatG*9;
+  const totalKcalCheck = proteinKcal+carbKcal+fatKcal;
+  const r = 68;
+  const circumference = 2*Math.PI*r;
+  const proteinLen = circumference * (proteinKcal/totalKcalCheck);
+  const carbLen = circumference * (carbKcal/totalKcalCheck);
+  const fatLen = circumference * (fatKcal/totalKcalCheck);
+
+  const shareText =
+`الاسم: ${answers.name}
+رقم الواتساب: ${answers.phone}
+
+نتيجتي من حاسبة السعرات والماكروز (Build with Protein):
+العمر: ${age} سنة | الطول: ${height} سم | الوزن: ${weight} كغم | الجنس: ${gender}
+مستوى النشاط: ${activityInfo.label}
+الهدف: ${goalInfo.label}
+
+BMR: ${bmr} سعرة
+TDEE: ${tdee} سعرة
+السعرات المستهدفة: ${targetCalories} سعرة
+
+بروتين: ${proteinG} جم (${proteinPct}%)
+كارب: ${carbG} جم (${carbPct}%)
+دهون: ${fatG} جم (${fatPct}%)`;
+
+  lastShareText = shareText;
+  lastPayload = {
+    "التاريخ والوقت": new Date().toLocaleString('ar-EG'),
+    "الاسم": answers.name,
+    "رقم الواتساب": answers.phone,
+    "العمر": age,
+    "الجنس": gender,
+    "الطول (سم)": height,
+    "الوزن (كغم)": weight,
+    "مستوى النشاط": activityInfo.label,
+    "الهدف": goalInfo.label,
+    "BMR": bmr,
+    "TDEE": tdee,
+    "السعرات المستهدفة": targetCalories,
+    "بروتين (جم)": proteinG,
+    "بروتين %": proteinPct,
+    "كارب (جم)": carbG,
+    "كارب %": carbPct,
+    "دهون (جم)": fatG,
+    "دهون %": fatPct
+  };
+
+  stage.innerHTML = `
+    <div class="card result-card">
+      <div class="result-title">خطتك اليومية</div>
+      <p class="result-sub">مبنية على بياناتك: ${age} سنة، ${height} سم، ${weight} كغم</p>
+
+      <div class="donut-wrap">
+        <svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(-90deg)">
+          <circle cx="90" cy="90" r="${r}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="18"/>
+          <circle cx="90" cy="90" r="${r}" fill="none" stroke="var(--protein)" stroke-width="18"
+            stroke-dasharray="${proteinLen} ${circumference}" stroke-dashoffset="0" stroke-linecap="round"/>
+          <circle cx="90" cy="90" r="${r}" fill="none" stroke="var(--carbs)" stroke-width="18"
+            stroke-dasharray="${carbLen} ${circumference}" stroke-dashoffset="${-proteinLen}" stroke-linecap="round"/>
+          <circle cx="90" cy="90" r="${r}" fill="none" stroke="var(--fat)" stroke-width="18"
+            stroke-dasharray="${fatLen} ${circumference}" stroke-dashoffset="${-(proteinLen+carbLen)}" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center">
+          <div class="kcal">${targetCalories}</div>
+          <div class="kcal-label">سعرة / يوم</div>
+        </div>
+      </div>
+
+      <div class="macro-grid">
+        <div class="macro-card" style="background:var(--protein-soft); border-color:var(--protein)">
+          <div class="m-label" style="color:var(--protein)">بروتين ${proteinPct}%</div>
+          <div class="m-val">${proteinG}</div>
+          <div class="m-unit">جم</div>
+          <div class="m-per">${Math.round(proteinG/4)} جم / وجبة (4 وجبات)</div>
+        </div>
+        <div class="macro-card" style="background:var(--carbs-soft); border-color:var(--carbs)">
+          <div class="m-label" style="color:var(--carbs)">كارب ${carbPct}%</div>
+          <div class="m-val">${carbG}</div>
+          <div class="m-unit">جم</div>
+          <div class="m-per">${Math.round(carbG/4)} جم / وجبة</div>
+        </div>
+        <div class="macro-card" style="background:var(--fat-soft); border-color:var(--fat)">
+          <div class="m-label" style="color:var(--fat)">دهون ${fatPct}%</div>
+          <div class="m-val">${fatG}</div>
+          <div class="m-unit">جم</div>
+          <div class="m-per">${Math.round(fatG/4)} جم / وجبة</div>
+        </div>
+      </div>
+
+      <div class="stat-rows">
+        <div class="stat-row"><span>معدل الأيض الأساسي (BMR)</span><b>${bmr} سعرة</b></div>
+        <div class="stat-row"><span>احتياجك بمعدل نشاطك (TDEE)</span><b>${tdee} سعرة</b></div>
+        <div class="stat-row"><span>هدفك المختار</span><b>${goalInfo.label}</b></div>
+      </div>
+
+      <div class="disclaimer">
+        الأرقام دي تقديرية بناءً على معادلة Mifflin-St Jeor، ومش بديل عن استشارة أخصائي تغذية أو طبيب، خصوصاً لو عندك أي حالة صحية.
+      </div>
+
+      <div class="share-block">
+        <p class="share-label">ابعتي نتيجتك تتحفظلك عند المدربة</p>
+        <div class="share-row">
+          <button type="button" class="submit-btn" id="submitBtn" onclick="submitResult()">📤 إرسال النتيجة</button>
+        </div>
+        <p class="share-status" id="submitStatus"></p>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn-ghost" onclick="goBack()">${(answers.goalCategory==='recomp_deficit'||answers.goalCategory==='recomp_surplus') ? 'تعديل هدفك' : 'تعديل الماكروز'}</button>
+        <button class="btn-primary" onclick="restart()">حساب من جديد</button>
+      </div>
+    </div>
+  `;
+}
+
+render();
+</script>
+
+</body>
+</html>
